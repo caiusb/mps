@@ -31,10 +31,13 @@ public class PiSequential implements PiApproximation {
 		for (int j = 0; j < iterations; j++) {
 			double x = Math.random();
 			double y = Math.random();
+
 			double lenght = x * x + y * y;
 			if (lenght < 1.0)
 				inside++;
 		}
-		return ((double) inside) / iterations * 4;
+		return
+
+		((double) inside) / iterations * 4;
 	}
 }

@@ -1,6 +1,5 @@
 package primes;
 
-import util.UnimplementedExercise;
 
 /*
  The goal is to parallelize the sequential implementation using threads.
@@ -19,13 +18,46 @@ import util.UnimplementedExercise;
  5. Test using the Driver
  */
 
-public class PrimesThreads extends PrimesComputation implements
-		UnimplementedExercise {
+public class PrimesThreads extends PrimesComputation {
+	
 	@Override
 	public Boolean[] computePrimes(int upto) {
+		int noOfCores = Runtime.getRuntime().availableProcessors();
+		int chunk = upto / noOfCores;
 		Boolean[] results = new Boolean[upto];
-		for (int x = 0; x < results.length; x++)
-			results[x] = isPrime(x);
+		PrimesApproximationThread[] thread = new PrimesApproximationThread[noOfCores];
+
+		for (int i=0; i<noOfCores; i++) {
+			thread[i] = new PrimesApproximationThread(results, chunk*i, chunk*(i+1));
+			thread[i].start();
+		}
+		
+		for (int i=0; i<noOfCores; i++)
+			try {
+				thread[i].join();
+			} catch (InterruptedException e) {
+			}			
+		
 		return results;
+	}
+	
+	class PrimesApproximationThread extends Thread {
+		
+		private Boolean[] results;
+		private int lo;
+		private int hi;
+
+		public PrimesApproximationThread(Boolean[] results, int lo, int hi) {
+			this.results = results;
+			this.lo = lo;
+			this.hi = hi;
+			
+		}
+		
+		@Override
+		public void run() {
+			for (int x = lo; x < hi; x++)
+				results[x] = isPrime(x);
+		}
 	}
 }

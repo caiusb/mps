@@ -1,6 +1,7 @@
 package pi;
 
-import util.UnimplementedExercise;
+import java.util.Random;
+
 
 /**
  * Parallel implementation of {@link PiSequential} using {@link Thread}
@@ -30,24 +31,57 @@ import util.UnimplementedExercise;
  	running the Driver
  */
 
-public class PiThreads implements PiApproximation, UnimplementedExercise {
+public class PiThreads implements PiApproximation {
 
 	@Override
 	public double computePi(long iterations) {
-		long inside = 0;
-		for (int j = 0; j < iterations; j++) {
-			double x = Math.random();
-			double y = Math.random();
-			double lenght = x * x + y * y;
-			if (lenght < 1.0)
-				inside++;
+		int noOfCores = Runtime.getRuntime().availableProcessors();
+		PiApproximationThread[] threads = new PiApproximationThread[noOfCores];
+		
+		long partialIterations = iterations/noOfCores;
+		for (int i=0; i<noOfCores; i++) {
+			threads[i] = new PiApproximationThread(partialIterations);
+			threads[i].start();
 		}
-		return ((double) inside) / iterations * 4;
+		
+		for (int i=0; i<noOfCores; i++)
+			try {
+				threads[i].join();
+			} catch (InterruptedException e) {
+			}
+		
+		double partialResult = 0;
+		for (int i=0; i<noOfCores; i++)
+			partialResult += threads[i].getResult();
+		
+		return partialResult/(double)noOfCores;
 	}
 
 	class PiApproximationThread extends Thread {
+		
+		private double partialPi = 0;
+		private final long iterations;
+		
+		public PiApproximationThread(long iterations) {
+			this.iterations = iterations;
+		}
+		
+		public double getResult() {
+			return partialPi;
+		}
+		
 		@Override
 		public void run() {
+			long inside = 0;
+			Random randomNumberGenerator = new Random();
+			for (int j = 0; j < iterations; j++) {
+				double x = randomNumberGenerator.nextDouble();
+				double y = randomNumberGenerator.nextDouble();
+				double lenght = x * x + y * y;
+				if (lenght < 1.0)
+					inside++;
+			}
+			partialPi = ((double) inside) / iterations * 4;
 		}
 	}
 }

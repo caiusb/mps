@@ -115,6 +115,10 @@ public class BlenderTest extends JFrame {
 				resultImageSource);
 		infoPanel.add(getPanelFor("Threads", threadsBlender));
 
+		// Pool
+		Blender poolBlender = new BlenderPool(img1, img2, resultBuffer,
+				resultImageSource);
+		infoPanel.add(getPanelFor("Thread pool", poolBlender));
 		return infoPanel;
 	}
 

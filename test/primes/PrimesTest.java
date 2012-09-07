@@ -26,6 +26,11 @@ public class PrimesTest {
 	public void testThreads() throws Exception {
 		test("Threads version", new PrimesThreads());
 	}
+	
+	@Test
+	public void testPool() throws Exception {
+		test("Pool version", new PrimesPool());
+	}
 
 	private void test(String version, PrimesComputation p)
 			throws Exception {

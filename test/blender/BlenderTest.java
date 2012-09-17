@@ -119,6 +119,11 @@ public class BlenderTest extends JFrame {
 		Blender poolBlender = new BlenderPool(img1, img2, resultBuffer,
 				resultImageSource);
 		infoPanel.add(getPanelFor("Thread pool", poolBlender));
+
+		// Fork-Join
+		Blender forkJoinBlender = new BlenderForkJoin(img1, img2, resultBuffer,
+				resultImageSource);
+		infoPanel.add(getPanelFor("ForkJoin", forkJoinBlender));
 		return infoPanel;
 	}
 

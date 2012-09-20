@@ -124,6 +124,11 @@ public class BlenderTest extends JFrame {
 		Blender forkJoinBlender = new BlenderForkJoin(img1, img2, resultBuffer,
 				resultImageSource);
 		infoPanel.add(getPanelFor("ForkJoin", forkJoinBlender));
+
+		Blender parallelBlender = new BlenderParallel(img1, img2, resultBuffer,
+				resultImageSource);
+		infoPanel.add(getPanelFor("Parallel", parallelBlender));
+
 		return infoPanel;
 	}
 

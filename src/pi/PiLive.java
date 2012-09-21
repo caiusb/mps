@@ -37,11 +37,13 @@ import util.UnimplementedExercise;
 */
 
 public class PiLive implements PiApproximation, LiveValue, UnimplementedExercise {
+	
+	private PiApproximationThread[] threads;
 
 	@Override
 	public double computePi(long iterations) {
 		int noOfCores = Runtime.getRuntime().availableProcessors();
-		PiApproximationThread[] threads = new PiApproximationThread[noOfCores];
+		threads = new PiApproximationThread[noOfCores];
 		
 		long partialIterations = iterations/noOfCores;
 		for (int i=0; i<noOfCores; i++) {

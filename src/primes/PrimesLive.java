@@ -4,7 +4,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import primes.PrimesPool.PrimesApproximationTask;
 import util.UnimplementedExercise;
 
 /*
@@ -35,10 +34,15 @@ import util.UnimplementedExercise;
  */
 
 public class PrimesLive extends PrimesComputation implements
-		LiveResults<Integer[]>, UnimplementedExercise {
+		LiveResults<Integer[]> {
+			
+	private Integer[] liveResults;
+	private int count = 0;
 
 	@Override
 	public Boolean[] computePrimes(int upto) {
+		liveResults = new Integer[upto];
+		
 		int noOfCores = Runtime.getRuntime().availableProcessors();
 		int chunkSize = 2000;
 		int tasks = upto / chunkSize;
@@ -75,8 +79,11 @@ public class PrimesLive extends PrimesComputation implements
 
 		@Override
 		public void run() {
-			for (int x = lo; x < hi; x++)
+			for (int x = lo; x < hi; x++) {
 				results[x] = isPrime(x);
+				if (results[x])
+					liveResults[count++] = x;
+			}
 		}
 	}
 
@@ -88,8 +95,7 @@ public class PrimesLive extends PrimesComputation implements
 	 */
 	@Override
 	public Integer[] getPrimes() {
-		// TODO implement this method
-		return null;
+		return liveResults;
 	}
 
 	/**
@@ -98,8 +104,7 @@ public class PrimesLive extends PrimesComputation implements
 	 */
 	@Override
 	public int primesCount() {
-		// TODO implement this method
-		return 0;
+		return count;
 	}
 
 }

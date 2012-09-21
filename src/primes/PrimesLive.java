@@ -4,8 +4,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import util.UnimplementedExercise;
-
 /*
  In this exercise, we make the Primes example slightly more complex. 
  Let's say we want to gather the prime numbers in an array, each element of 

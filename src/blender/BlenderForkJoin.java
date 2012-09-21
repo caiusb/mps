@@ -5,8 +5,6 @@ import java.awt.image.MemoryImageSource;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
 
-import util.UnimplementedExercise;
-
 /**
  * Fork-join implementation of image blending
  */

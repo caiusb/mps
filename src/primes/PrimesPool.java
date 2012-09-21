@@ -4,9 +4,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import primes.PrimesThreads.PrimesApproximationThread;
-import util.UnimplementedExercise;
-
 /*
  The goal of this exercise is to parallelize the primes 
  computation using a thread pool instead of an array 

@@ -2,9 +2,6 @@ package primes;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
-import java.util.concurrent.TimeUnit;
-
-import util.UnimplementedExercise;
 
 /**
  * Fork-join style implementation for primes computation

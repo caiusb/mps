@@ -6,10 +6,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import blender.BlenderThreads.BlenderPartialComputationThread;
-
-import util.UnimplementedExercise;
-
 /*
  The goal of this exercise is to parallelize the blender 
  computation using a thread pool instead of an array 

@@ -1,5 +1,8 @@
 package pi;
 
+import java.util.Random;
+
+import pi.PiThreads.PiApproximationThread;
 import util.UnimplementedExercise;
 
 /**
@@ -37,8 +40,54 @@ public class PiLive implements PiApproximation, LiveValue, UnimplementedExercise
 
 	@Override
 	public double computePi(long iterations) {
-		// TODO: replace with your implementation 
-		return 100.0;
+		int noOfCores = Runtime.getRuntime().availableProcessors();
+		PiApproximationThread[] threads = new PiApproximationThread[noOfCores];
+		
+		long partialIterations = iterations/noOfCores;
+		for (int i=0; i<noOfCores; i++) {
+			threads[i] = new PiApproximationThread(partialIterations);
+			threads[i].start();
+		}
+		
+		for (int i=0; i<noOfCores; i++)
+			try {
+				threads[i].join();
+			} catch (InterruptedException e) {
+			}
+		
+		double partialResult = 0;
+		for (int i=0; i<noOfCores; i++)
+			partialResult += threads[i].getResult();
+		
+		return partialResult/(double)noOfCores;
+	}
+
+	class PiApproximationThread extends Thread {
+		
+		private double partialPi = 0;
+		private final long iterations;
+		
+		public PiApproximationThread(long iterations) {
+			this.iterations = iterations;
+		}
+		
+		public double getResult() {
+			return partialPi;
+		}
+		
+		@Override
+		public void run() {
+			long inside = 0;
+			Random randomNumberGenerator = new Random();
+			for (int j = 0; j < iterations; j++) {
+				double x = randomNumberGenerator.nextDouble();
+				double y = randomNumberGenerator.nextDouble();
+				double lenght = x * x + y * y;
+				if (lenght < 1.0)
+					inside++;
+			}
+			partialPi = ((double) inside) / iterations * 4;
+		}
 	}
 
 	/**

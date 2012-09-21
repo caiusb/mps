@@ -1,7 +1,7 @@
 package primes;
 
 public interface LiveResults<T> {
-	T getResults();
+	T getPrimes();
 
-	int resultsCount();
+	int primesCount();
 }

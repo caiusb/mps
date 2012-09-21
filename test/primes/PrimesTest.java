@@ -41,6 +41,16 @@ public class PrimesTest {
 	public void testParallel() throws Exception {
 		test("Pool version", new PrimesParallel());
 	}
+	
+	@Test
+	public void testLive() throws Exception {
+		test("Live version", new PrimesLive());
+	}
+	
+	@Test
+	public void testLiveSync() throws Exception {
+		test("Live with sync version", new PrimesLiveSync());
+	}
 
 	private void test(String version, PrimesComputation p)
 			throws Exception {
@@ -75,7 +85,7 @@ public class PrimesTest {
 		Assert.assertEquals(NO_PRIMES_UP_TO, numberOfPrimes);
 		if (p instanceof LiveResults)
 			System.out.println("# live primes: "
-					+ ((LiveResults<?>) p).resultsCount());
+					+ ((LiveResults<?>) p).primesCount());
 		StopWatch.log("Time: ");
 		if (resetReference || referenceRuntime == 0)
 			referenceRuntime = StopWatch.getRuntime();

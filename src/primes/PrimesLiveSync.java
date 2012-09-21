@@ -37,7 +37,7 @@ public class PrimesLiveSync extends PrimesComputation implements
 
 		threadPool.shutdown();
 		try {
-			while (!threadPool.awaitTermination(500, TimeUnit.MILLISECONDS))
+			while (!threadPool.awaitTermination(10, TimeUnit.SECONDS))
 				;
 		} catch (InterruptedException e) {
 		}

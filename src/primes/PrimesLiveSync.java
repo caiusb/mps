@@ -4,8 +4,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import util.UnimplementedExercise;
-
 /* 
  Steps:
 
@@ -15,10 +13,11 @@ import util.UnimplementedExercise;
  */
 
 public class PrimesLiveSync extends PrimesComputation implements
-		LiveResults<Integer[]>, UnimplementedExercise {
+		LiveResults<Integer[]> {
 
 	private Integer[] liveResults;
 	private int count = 0;
+	private static Object lock = new Object();
 
 	@Override
 	public Boolean[] computePrimes(int upto) {
@@ -55,15 +54,17 @@ public class PrimesLiveSync extends PrimesComputation implements
 			this.results = results;
 			this.lo = lo;
 			this.hi = hi;
-
 		}
 
 		@Override
 		public void run() {
 			for (int x = lo; x < hi; x++) {
 				results[x] = isPrime(x);
-				if (results[x])
-					liveResults[count++] = x;
+				if (results[x]) {
+					synchronized (liveResults) {
+						liveResults[count++] = x;
+					}
+				}
 			}
 		}
 	}

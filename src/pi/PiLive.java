@@ -36,7 +36,7 @@ import util.UnimplementedExercise;
     will ask you to introduce synchronization.
 */
 
-public class PiLive implements PiApproximation, LiveValue, UnimplementedExercise {
+public class PiLive implements PiApproximation, LiveValue {
 	
 	private PiApproximationThread[] threads;
 	private int noOfCores;

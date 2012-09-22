@@ -21,7 +21,7 @@ import util.UnimplementedExercise;
 public class PiTest {
 	private static final double PI = 3.141592653589793238462643383279D;
 	private static final int ITERATIONS = 20000000;
-	private static long sequentialRuntime = 0;
+	private static long seqRuntime = 0;
 
 	@Test
 	public void testSequential() throws Exception {
@@ -42,6 +42,7 @@ public class PiTest {
 	public void testLiveSync() throws Exception {
 		test("Live with sync version", new PiLiveSync());
 	}
+
 	protected void test(String version, final PiApproximation piApproximation)
 			throws Exception {
 
@@ -60,29 +61,32 @@ public class PiTest {
 		warmup(piApproximation);
 		// double the warmup for the sequential version - just to make sure all
 		// JIT is done
-		if (sequentialRuntime == 0)
+		if (seqRuntime == 0)
 			warmup(piApproximation);
 
 		StopWatch.start();
 		Timer timer = new Timer("Print live value");
 		if (piApproximation instanceof LiveValue) {
+			int processorCount = Runtime.getRuntime().availableProcessors();
+			long delay = (seqRuntime == 0 ? 400 : seqRuntime) / processorCount
+					/ 2;
 			timer.schedule(new TimerTask() {
 				@Override
 				public void run() {
-					System.out.println("Live value: "
-							+ ((LiveValue) piApproximation).liveValue());
+					double livePi = ((LiveValue) piApproximation).liveValue();
+					System.out.println("Live value: " + livePi);
 				}
-			}, sequentialRuntime == 0 ? 500 : sequentialRuntime);
+			}, delay);
 		}
 		double pi = piApproximation.computePi(ITERATIONS);
 		StopWatch.stop();
 
 		StopWatch.log("Time: ");
-		if (sequentialRuntime == 0)
-			sequentialRuntime = StopWatch.getRuntime();
+		if (seqRuntime == 0)
+			seqRuntime = StopWatch.getRuntime();
 		else
-			System.out.printf("Speed-up: %.2f\n", sequentialRuntime / 1.0
-					/ StopWatch.getRuntime());
+			System.out.printf("Speed-up: %.2f\n",
+					seqRuntime / 1.0 / StopWatch.getRuntime());
 
 		System.out.println("     Real Pi: " + PI);
 		System.out.println("Estimated Pi: " + pi);

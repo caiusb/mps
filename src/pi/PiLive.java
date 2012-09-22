@@ -80,6 +80,10 @@ public class PiLive implements PiApproximation, LiveValue, UnimplementedExercise
 			return partialPi;
 		}
 		
+		public double getPartial() {
+			return ((double) inside) / soFar * 4;
+		}
+
 		@Override
 		public void run() {
 			inside = 0;
@@ -100,7 +104,11 @@ public class PiLive implements PiApproximation, LiveValue, UnimplementedExercise
 	 * from outside the PiLive object.
 	 */
 	public double liveValue() {
-		// TODO: implement
-		return 100.0;
+		double partialResult = 0;
+		for (PiApproximationThread thread : threads) {
+			partialResult += thread.getPartial();
+		}
+
+		return partialResult / noOfCores;
 	}
 }

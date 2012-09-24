@@ -40,6 +40,7 @@ public class PrimesLive extends PrimesComputation implements
 	@Override
 	public Boolean[] computePrimes(int upto) {
 		liveResults = new Integer[upto];
+		count = 0;
 		
 		int noOfCores = Runtime.getRuntime().availableProcessors();
 		int chunkSize = 2000;

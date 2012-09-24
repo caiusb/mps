@@ -12,7 +12,7 @@ public class ChatRoomSync {
 
 	private Map<String, UserProfile> occupants = new HashMap<String, UserProfile>();
 
-	public boolean joinRoom(String nickname, String userName, String password) {
+	public synchronized boolean joinRoom(String nickname, String userName, String password) {
 		UserProfile userProfile = new UserProfile(userName, password);
 		if (!occupants.containsKey(nickname)) {
 			occupants.put(nickname, userProfile);
@@ -21,7 +21,7 @@ public class ChatRoomSync {
 		return false;
 	}
 
-	public void changePassword(String nickname, String userName,
+	public synchronized void changePassword(String nickname, String userName,
 			String oldPassword, String newPassword) {
 		UserProfile occupant = occupants.get(nickname);
 		if (occupant != null) {
@@ -32,11 +32,11 @@ public class ChatRoomSync {
 		}
 	}
 
-	public int onlineUsers() {
+	public synchronized int onlineUsers() {
 		return occupants.size();
 	}
 
-	public void leaveRoom(String nickName) {
+	public synchronized void leaveRoom(String nickName) {
 		occupants.remove(nickName);
 	}
 }

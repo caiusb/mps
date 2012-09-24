@@ -2,8 +2,6 @@ package pi;
 
 import java.util.Random;
 
-import util.UnimplementedExercise;
-
 /**
  * Parallel implementation of {@link PiApproximation} that also reports the
  * approximation so far using the {@link #liveValue()} method.
@@ -21,7 +19,7 @@ import util.UnimplementedExercise;
  * 2. Fix the races using synchronization.
  */
 
-public class PiLiveSync implements PiApproximation, UnimplementedExercise {
+public class PiLiveSync implements PiApproximation, LiveValue {
 
 	private PiApproximationThread[] threads;
 	private int noOfCores;
@@ -65,7 +63,7 @@ public class PiLiveSync implements PiApproximation, UnimplementedExercise {
 			return partialPi;
 		}
 
-		public double getPartial() {
+		public synchronized double getPartial() {
 			return ((double) inside) / soFar * 4;
 		}
 
@@ -73,12 +71,15 @@ public class PiLiveSync implements PiApproximation, UnimplementedExercise {
 		public void run() {
 			inside = 0;
 			Random randomNumberGenerator = new Random();
-			for (soFar = 0; soFar < iterations; soFar++) {
+			for (int i = 0; i < iterations; i++) {
 				double x = randomNumberGenerator.nextDouble();
 				double y = randomNumberGenerator.nextDouble();
 				double lenght = x * x + y * y;
-				if (lenght < 1.0)
-					inside++;
+				synchronized (this) {
+					soFar = i;
+					if (lenght < 1.0)
+						inside++;
+				}
 			}
 			partialPi = ((double) inside) / iterations * 4;
 		}

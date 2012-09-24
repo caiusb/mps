@@ -34,12 +34,12 @@ public class PrimesTest {
 	
 	@Test
 	public void testForkJoin() throws Exception {
-		test("Pool version", new PrimesForkJoin());
+		test("ForkJoin version", new PrimesForkJoin());
 	}
 	
 	@Test
 	public void testParallel() throws Exception {
-		test("Pool version", new PrimesParallel());
+		test("Parallel version", new PrimesParallel());
 	}
 	
 	@Test

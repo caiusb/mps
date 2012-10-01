@@ -1,7 +1,7 @@
 package chatroom;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /*
  Steps:
@@ -12,15 +12,12 @@ import java.util.Map;
 
 public class ChatRoomConcurrent {
 
-	private Map<String, UserProfile> occupants = new HashMap<String, UserProfile>();
+	private ConcurrentMap<String, UserProfile> occupants = new ConcurrentHashMap<String, UserProfile>();
 
 	public boolean joinRoom(String nickname, String userName, String password) {
 		UserProfile userProfile = new UserProfile(userName, password);
-		if (!occupants.containsKey(nickname)) {
-			occupants.put(nickname, userProfile);
-			return true;
-		}
-		return false;
+		UserProfile previous = occupants.putIfAbsent(nickname, userProfile);
+		return previous == null;
 	}
 
 	public void changePassword(String nickname, String userName,

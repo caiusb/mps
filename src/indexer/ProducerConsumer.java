@@ -75,9 +75,11 @@ public class ProducerConsumer {
 
 		private final File[] files;
 		private Set<File> filesToIndex;
+		private FileFilter filter;
 
-		public FileProducer(File[] files) {
+		public FileProducer(File[] files, FileFilter filter) {
 			this.files = files;
+			this.filter = filter;
 		}
 
 		public Set<File> produce() throws InterruptedException {
@@ -95,7 +97,7 @@ public class ProducerConsumer {
 			if (!root.isDirectory())
 				return;
 
-			File[] entries = root.listFiles();
+			File[] entries = root.listFiles(filter);
 			for (File entry : entries)
 				if (entry.isDirectory())
 					crawl(entry);
@@ -115,7 +117,6 @@ public class ProducerConsumer {
 		}
 
 		public Map<String, Set<File>> consume() {
-			this.files = files;
 			for (File file : files) {
 				indexFile(file);
 			}
@@ -154,7 +155,7 @@ public class ProducerConsumer {
 		private FileProducer producer;
 
 		public Indexer(File[] files, FileFilter filter) {
-			producer = new FileProducer(files);
+			producer = new FileProducer(files, filter);
 			this.fileFilter = filter;
 		}
 

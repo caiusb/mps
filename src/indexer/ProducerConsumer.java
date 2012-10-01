@@ -5,6 +5,7 @@ import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
@@ -66,41 +67,58 @@ public class ProducerConsumer {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		System.out.println("The index contains: "+indexer.getIndex().get("the").size());
+		System.out.println("The index contains: "
+				+ indexer.getIndex().get("the").size());
 	}
 
-	static class Indexer {
+	private static class FileProducer {
+
 		private final File[] files;
-		private Map<String, Set<File>> index;
-		private final FileFilter fileFilter;
+		private Set<File> filesToIndex;
 
-		public Indexer(File[] files, FileFilter filter) {
+		public FileProducer(File[] files) {
 			this.files = files;
-			this.fileFilter = filter;
 		}
 
-		public Map<String, Set<File>> getIndex() {
-			return index;
-		}
-
-		public void compute() throws InterruptedException {
-			index = new HashMap<String, Set<File>>();
+		public Set<File> produce() throws InterruptedException {
+			filesToIndex = new HashSet<File>();
 			for (File entry : files)
 				if (entry.isDirectory())
 					crawl(entry);
-				else if (!alreadyIndexed(entry))
-					indexFile(entry);
+				else if (!filesToIndex.contains(entry))
+					filesToIndex.add(entry);
+
+			return filesToIndex;
 		}
 
 		private void crawl(File root) throws InterruptedException {
-			File[] entries = root.listFiles(fileFilter);
-			if (entries != null) {
-				for (File entry : entries)
-					if (entry.isDirectory())
-						crawl(entry);
-					else if (!alreadyIndexed(entry))
-						indexFile(entry);
+			if (!root.isDirectory())
+				return;
+
+			File[] entries = root.listFiles();
+			for (File entry : entries)
+				if (entry.isDirectory())
+					crawl(entry);
+				else if (!filesToIndex.contains(entry))
+					filesToIndex.add(entry);
+		}
+	}
+	private static class FileConsumer {
+
+		private Set<File> files;
+
+		public FileConsumer(Set<File> files) {
+			this.files = files;
+			this.index = new HashMap<String, Set<File>>();
+		}
+
+		public Map<String, Set<File>> consume() {
+			this.files = files;
+			for (File file : files) {
+				indexFile(file);
 			}
+
+			return index;
 		}
 
 		public void indexFile(File file) {
@@ -126,11 +144,23 @@ public class ProducerConsumer {
 			}
 		}
 
-		private boolean alreadyIndexed(File f) {
-			return false;
+	}
+	static class Indexer {
+		private FileProducer producer;
+
+		public Indexer(File[] files, FileFilter filter) {
+			this.fileFilter = filter;
+
+		public Map<String, Set<File>> getIndex() {
+		}
+
+		public void compute() throws InterruptedException {
+			Set<File> fileSet = producer.produce();
+			FileConsumer fileConsumer = new FileConsumer(fileSet);
+			index = fileConsumer.consume();
 		}
 	}
-	
+
 	public static void main(String[] args) {
 		File[] files = new File[1];
 		files[0] = new File("resources/data");

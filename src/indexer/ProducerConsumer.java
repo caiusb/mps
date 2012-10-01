@@ -18,39 +18,39 @@ import util.StopWatch;
  one (or more) directories and produces a map between words and the files that contain them, 
  i.e. it generates a Map<String, Set<File>>. 
 
-Steps:
+ Steps:
 
  1. Find a good split between the "producer" part and the "consumer" part of
-	the algorithm. The aim is to have a producer that crawls the directory structure and
-	generates File objects (there are other split options, you can explore them if you
-	like). The consumer feeds off the File objects and indexes them.
-	Make the necessary transformations such that the "producer" part and the "consumer"
-	part are separate (inner) classes. For now, don't worry about having more than 
-	one producer and more than one consumer. Also, don't worry about how they are 
-	interfaced. For this step you can use a simple data structure like a Set to get 
-	all results from the "producer" and then send them to the "consumer". 
+ the algorithm. The aim is to have a producer that crawls the directory structure and
+ generates File objects (there are other split options, you can explore them if you
+ like). The consumer feeds off the File objects and indexes them.
+ Make the necessary transformations such that the "producer" part and the "consumer"
+ part are separate (inner) classes. For now, don't worry about having more than 
+ one producer and more than one consumer. Also, don't worry about how they are 
+ interfaced. For this step you can use a simple data structure like a Set to get 
+ all results from the "producer" and then send them to the "consumer". 
 
  2. The algorithm has a list of directories (as Files) as input. Make it such that 
-	each file is processed by a different producer.
+ each file is processed by a different producer.
 
  3. The result of the consumer is, for now, a set of Files. Make it such that each
-	file is processed by a separate "consumer".
+ file is processed by a separate "consumer".
 
  4. Make the "producers" work in parallel. You can choose any solution you like, i.e.
-	simple Threads, Runnable tasks, thread pools, etc. Use a concurrent collection
-	to it thread-safe.
+ simple Threads, Runnable tasks, thread pools, etc. Use a concurrent collection
+ to it thread-safe.
 
  5. Make sure the producers finish before starting the consumers. Figure out a way 
-	of stopping the producers when they have finished their work.
+ of stopping the producers when they have finished their work.
 
  6. Parallelize the consumers in a similar manner. Don't worry about running 
-	the producers and consumers in parallel, for now. Make the consumers feed on the set given by
-	the producers.
+ the producers and consumers in parallel, for now. Make the consumers feed on the set given by
+ the producers.
 
  7. Replace the Set<File> used to communicate between producers and consumers with a BlockingQueue.
 
  8. Make producers and consumers run in parallel. Make sure the application still terminates.
-*/
+ */
 
 public class ProducerConsumer {
 
@@ -60,7 +60,7 @@ public class ProducerConsumer {
 				return true;
 			}
 		};
-		
+
 		Indexer indexer = new Indexer(files, filter);
 		try {
 			indexer.compute();
@@ -103,8 +103,10 @@ public class ProducerConsumer {
 					filesToIndex.add(entry);
 		}
 	}
+
 	private static class FileConsumer {
 
+		private Map<String, Set<File>> index;
 		private Set<File> files;
 
 		public FileConsumer(Set<File> files) {
@@ -145,13 +147,19 @@ public class ProducerConsumer {
 		}
 
 	}
+
 	static class Indexer {
+		private Map<String, Set<File>> index;
+		private final FileFilter fileFilter;
 		private FileProducer producer;
 
 		public Indexer(File[] files, FileFilter filter) {
+			producer = new FileProducer(files);
 			this.fileFilter = filter;
+		}
 
 		public Map<String, Set<File>> getIndex() {
+			return index;
 		}
 
 		public void compute() throws InterruptedException {

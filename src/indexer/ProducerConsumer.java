@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import util.StopWatch;
 
@@ -107,11 +109,11 @@ public class ProducerConsumer {
 
 	private static class FileConsumer {
 
-		private Map<String, Set<File>> index;
+		private ConcurrentMap<String, Set<File>> index;
 		private Set<File> files;
 		private File file;
 
-		public FileConsumer(File file, Map<String, Set<File>> index) {
+		public FileConsumer(File file, ConcurrentMap<String, Set<File>> index) {
 			this.file = file;
 			this.index = index;
 		}
@@ -128,11 +130,7 @@ public class ProducerConsumer {
 					String line = s.nextLine();
 					String[] split = line.split(" ");
 					for (String token : split) {
-						if (!index.containsKey(token)) {
-							Set<File> set = Collections
-									.newSetFromMap(new HashMap<File, Boolean>());
-							index.put(token, set);
-						}
+						index.putIfAbsent(token, new HashSet<File>());
 						Set<File> set = index.get(token);
 						set.add(file);
 					}
@@ -146,7 +144,7 @@ public class ProducerConsumer {
 	}
 
 	static class Indexer {
-		private Map<String, Set<File>> index = new HashMap<String, Set<File>>();
+		private ConcurrentMap<String, Set<File>> index = new ConcurrentHashMap<String, Set<File>>();
 		private FileFilter filter;
 		private File[] files;
 

@@ -116,9 +116,8 @@ public class ProducerConsumer {
 			this.index = index;
 		}
 
-		public Map<String, Set<File>> consume() {
+		public void consume() {
 			indexFile(file);
-			return index;
 		}
 
 		public void indexFile(File file) {

@@ -150,13 +150,11 @@ public class ProducerConsumer {
 
 	static class Indexer {
 		private Map<String, Set<File>> index;
-		private final FileFilter fileFilter;
 		private FileProducer producer;
 
 		public Indexer(File[] files, FileFilter filter) {
 			for (File file : files)
 				producer = new FileProducer(file, filter);
-			this.fileFilter = filter;
 		}
 
 		public Map<String, Set<File>> getIndex() {

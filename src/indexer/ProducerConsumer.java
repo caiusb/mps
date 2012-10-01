@@ -109,17 +109,15 @@ public class ProducerConsumer {
 
 		private Map<String, Set<File>> index;
 		private Set<File> files;
+		private File file;
 
-		public FileConsumer(Set<File> files) {
-			this.files = files;
-			this.index = new HashMap<String, Set<File>>();
+		public FileConsumer(File file, Map<String, Set<File>> index) {
+			this.file = file;
+			this.index = index;
 		}
 
 		public Map<String, Set<File>> consume() {
-			for (File file : files) {
-				indexFile(file);
-			}
-
+			indexFile(file);
 			return index;
 		}
 
@@ -149,12 +147,13 @@ public class ProducerConsumer {
 	}
 
 	static class Indexer {
-		private Map<String, Set<File>> index;
-		private FileProducer producer;
+		private Map<String, Set<File>> index = new HashMap<String, Set<File>>();
+		private FileFilter filter;
+		private File[] files;
 
 		public Indexer(File[] files, FileFilter filter) {
-			for (File file : files)
-				producer = new FileProducer(file, filter);
+			this.files = files;
+			this.filter = filter;
 		}
 
 		public Map<String, Set<File>> getIndex() {
@@ -162,9 +161,15 @@ public class ProducerConsumer {
 		}
 
 		public void compute() throws InterruptedException {
-			Set<File> fileSet = producer.produce();
-			FileConsumer fileConsumer = new FileConsumer(fileSet);
-			index = fileConsumer.consume();
+			Set<File> fileSet = new HashSet<File>();
+			for (File file : files) {
+				FileProducer producer = new FileProducer(file, filter);
+				fileSet.addAll(producer.produce());
+			}
+			for (File file : fileSet) {
+				FileConsumer consumer = new FileConsumer(file, index);
+				consumer.consume();
+			}
 		}
 	}
 

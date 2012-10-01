@@ -73,22 +73,21 @@ public class ProducerConsumer {
 
 	private static class FileProducer {
 
-		private final File[] files;
+		private final File file;
 		private Set<File> filesToIndex;
 		private FileFilter filter;
 
-		public FileProducer(File[] files, FileFilter filter) {
-			this.files = files;
+		public FileProducer(File file, FileFilter filter) {
+			this.file = file;
 			this.filter = filter;
 		}
 
 		public Set<File> produce() throws InterruptedException {
 			filesToIndex = new HashSet<File>();
-			for (File entry : files)
-				if (entry.isDirectory())
-					crawl(entry);
-				else if (!filesToIndex.contains(entry))
-					filesToIndex.add(entry);
+			if (file.isDirectory())
+				crawl(file);
+			else if (!filesToIndex.contains(file))
+				filesToIndex.add(file);
 
 			return filesToIndex;
 		}
@@ -155,7 +154,8 @@ public class ProducerConsumer {
 		private FileProducer producer;
 
 		public Indexer(File[] files, FileFilter filter) {
-			producer = new FileProducer(files, filter);
+			for (File file : files)
+				producer = new FileProducer(file, filter);
 			this.fileFilter = filter;
 		}
 

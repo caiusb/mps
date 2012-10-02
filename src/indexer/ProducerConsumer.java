@@ -62,6 +62,8 @@ import util.StopWatch;
  */
 
 public class ProducerConsumer {
+	
+	private static boolean areProducersDone = false;
 
 	private static void startIndexing(File[] files) {
 		FileFilter filter = new FileFilter() {
@@ -117,44 +119,75 @@ public class ProducerConsumer {
 		}
 	}
 
-	private static class FileConsumer implements Runnable {
+	private static class FileConsumer {
 
 		private ConcurrentMap<String, Set<File>> index;
-		private Set<File> files;
-		private File file;
+		private BlockingQueue<File> queue;
+		private int noOfThreads;
 
-		public FileConsumer(File file, ConcurrentMap<String, Set<File>> index) {
-			this.file = file;
+		public FileConsumer(ConcurrentMap<String, Set<File>> index, BlockingQueue<File> queue, int noOfThreads) {
 			this.index = index;
+			this.queue = queue;
+			this.noOfThreads = noOfThreads;
 		}
+		
+		private static class ConsumerThread extends Thread {
+			
+			private BlockingQueue<File> queue;
+			private ConcurrentMap<String, Set<File>> index;
 
-		@Override
-		public void run() {
-			indexFile(file);
-		}
-
-		public void indexFile(File file) {
-			System.out.println("Indexing... " + file);
-			try {
-				Scanner s = new Scanner(file);
-				while (s.hasNextLine()) {
-					String line = s.nextLine();
-					String[] split = line.split(" ");
-					for (String token : split) {
-						index.putIfAbsent(
-								token,
-								Collections
-										.newSetFromMap(new ConcurrentHashMap<File, Boolean>()));
-						Set<File> set = index.get(token);
-						set.add(file);
+			public ConsumerThread(BlockingQueue<File> queue, ConcurrentMap<String, Set<File>> index) {
+				this.queue = queue;
+				this.index = index;
+				
+			}
+			
+			@Override
+			public void run() {
+				while (!areProducersDone)
+					try {
+						File file = queue.take();
+						indexFile(file);
+					} catch (InterruptedException e) {
 					}
+			}
+			
+			public void indexFile(File file) {
+				System.out.println("Indexing... " + file);
+				try {
+					Scanner s = new Scanner(file);
+					while (s.hasNextLine()) {
+						String line = s.nextLine();
+						String[] split = line.split(" ");
+						for (String token : split) {
+							index.putIfAbsent(
+									token,
+									Collections
+											.newSetFromMap(new ConcurrentHashMap<File, Boolean>()));
+							Set<File> set = index.get(token);
+							set.add(file);
+						}
+					}
+					s.close();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
 				}
-				s.close();
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
 			}
 		}
-
+		
+		public void consume() {
+			Thread[] threads = new Thread[noOfThreads];
+			for (int i=0; i<noOfThreads; i++) { 
+				threads[i] = new ConsumerThread(queue, index);
+				threads[i].start();
+			}
+			
+			for (int i=0; i<noOfThreads; i++)
+				try {
+					threads[i].join();
+				} catch (InterruptedException e) {
+				}
+		}
 	}
 
 	static class Indexer {
@@ -183,18 +216,11 @@ public class ProducerConsumer {
 					.getRuntime().availableProcessors());
 			producerPool.invokeAll(tasks);
 			producerPool.shutdown();
-
-			ExecutorService consumerPool = Executors.newFixedThreadPool(Runtime
-					.getRuntime().availableProcessors());
-			while(!producerPool.isShutdown() || !queue.isEmpty()) {
-				FileConsumer consumer = new FileConsumer(queue.take(), index);
-				consumerPool.execute(consumer);
-			}
-			consumerPool.shutdown();
 			
+			FileConsumer consumer = new FileConsumer(index, queue, 2);
+			consumer.consume();
+
 			while (!producerPool.awaitTermination(1, TimeUnit.HOURS))
-				;
-			while (!consumerPool.awaitTermination(1, TimeUnit.HOURS))
 				;
 		}
 	}

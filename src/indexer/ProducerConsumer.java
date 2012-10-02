@@ -124,6 +124,7 @@ public class ProducerConsumer {
 		private ConcurrentMap<String, Set<File>> index;
 		private BlockingQueue<File> queue;
 		private int noOfThreads;
+		private Thread[] threads;
 
 		public FileConsumer(ConcurrentMap<String, Set<File>> index, BlockingQueue<File> queue, int noOfThreads) {
 			this.index = index;
@@ -144,7 +145,7 @@ public class ProducerConsumer {
 			
 			@Override
 			public void run() {
-				while (!areProducersDone)
+				while (!areProducersDone || !queue.isEmpty())
 					try {
 						File file = queue.take();
 						indexFile(file);
@@ -176,17 +177,19 @@ public class ProducerConsumer {
 		}
 		
 		public void consume() {
-			Thread[] threads = new Thread[noOfThreads];
+			threads = new Thread[noOfThreads];
 			for (int i=0; i<noOfThreads; i++) { 
 				threads[i] = new ConsumerThread(queue, index);
 				threads[i].start();
 			}
-			
+		}
+
+		public void join() {
 			for (int i=0; i<noOfThreads; i++)
 				try {
 					threads[i].join();
 				} catch (InterruptedException e) {
-				}
+				}			
 		}
 	}
 
@@ -222,6 +225,10 @@ public class ProducerConsumer {
 
 			while (!producerPool.awaitTermination(1, TimeUnit.HOURS))
 				;
+			
+			areProducersDone = true;
+			
+			consumer.join();
 		}
 	}
 

@@ -3,14 +3,21 @@ package indexer;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import util.StopWatch;
 
@@ -73,7 +80,7 @@ public class ProducerConsumer {
 				+ indexer.getIndex().get("the").size());
 	}
 
-	private static class FileProducer {
+	private static class FileProducer implements Callable<Set<File>> {
 
 		private final File file;
 		private Set<File> filesToIndex;
@@ -84,7 +91,8 @@ public class ProducerConsumer {
 			this.filter = filter;
 		}
 
-		public Set<File> produce() throws InterruptedException {
+		@Override
+		public Set<File> call() throws Exception {
 			filesToIndex = new HashSet<File>();
 			if (file.isDirectory())
 				crawl(file);
@@ -159,10 +167,23 @@ public class ProducerConsumer {
 
 		public void compute() throws InterruptedException {
 			Set<File> fileSet = new HashSet<File>();
+			List<Callable<Set<File>>> tasks = new ArrayList<Callable<Set<File>>>();
 			for (File file : files) {
 				FileProducer producer = new FileProducer(file, filter);
-				fileSet.addAll(producer.produce());
+				tasks.add(producer);
 			}
+			ForkJoinPool pool = new ForkJoinPool();
+			List<Future<Set<File>>> results = pool.invokeAll(tasks);
+			pool.shutdown();
+			while (!pool.awaitTermination(1, TimeUnit.HOURS))
+				;
+			for (Future<Set<File>> result : results) {
+				try {
+					fileSet.addAll(result.get());
+				} catch (ExecutionException e) {
+				}
+			}
+			
 			for (File file : fileSet) {
 				FileConsumer consumer = new FileConsumer(file, index);
 				consumer.consume();

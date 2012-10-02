@@ -177,7 +177,8 @@ public class ProducerConsumer {
 				FileProducer producer = new FileProducer(file, filter);
 				tasks.add(producer);
 			}
-			ForkJoinPool pool = new ForkJoinPool();
+			ExecutorService pool = Executors.newFixedThreadPool(Runtime
+					.getRuntime().availableProcessors());
 			List<Future<Set<File>>> results = pool.invokeAll(tasks);
 			pool.shutdown();
 			while (!pool.awaitTermination(1, TimeUnit.HOURS))

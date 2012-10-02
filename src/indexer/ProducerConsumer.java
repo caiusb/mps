@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -17,6 +18,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import util.StopWatch;
@@ -80,26 +82,28 @@ public class ProducerConsumer {
 				+ indexer.getIndex().get("the").size());
 	}
 
-	private static class FileProducer implements Callable<Set<File>> {
+	private static class FileProducer implements Callable<Object> {
 
 		private final File file;
 		private Set<File> filesToIndex;
 		private FileFilter filter;
+		private BlockingQueue<File> queue;
 
-		public FileProducer(File file, FileFilter filter) {
+		public FileProducer(File file, FileFilter filter, BlockingQueue<File> queue) {
 			this.file = file;
 			this.filter = filter;
+			this.queue = queue;
 		}
 
 		@Override
-		public Set<File> call() throws Exception {
+		public Object call() throws Exception {
 			filesToIndex = new HashSet<File>();
 			if (file.isDirectory())
 				crawl(file);
-			else if (!filesToIndex.contains(file))
-				filesToIndex.add(file);
+			else
+				queue.add(file);
 
-			return filesToIndex;
+			return null;
 		}
 
 		private void crawl(File root) throws InterruptedException {
@@ -110,12 +114,12 @@ public class ProducerConsumer {
 			for (File entry : entries)
 				if (entry.isDirectory())
 					crawl(entry);
-				else if (!filesToIndex.contains(entry))
-					filesToIndex.add(entry);
+				else
+					queue.add(entry);
 		}
 	}
 
-	private static class FileConsumer implements Callable<Object> {
+	private static class FileConsumer implements Runnable {
 
 		private ConcurrentMap<String, Set<File>> index;
 		private Set<File> files;
@@ -127,9 +131,8 @@ public class ProducerConsumer {
 		}
 
 		@Override
-		public Object call() {
+		public void run() {
 			indexFile(file);
-			return null;
 		}
 
 		public void indexFile(File file) {
@@ -171,34 +174,28 @@ public class ProducerConsumer {
 		}
 
 		public void compute() throws InterruptedException {
-			Set<File> fileSet = new HashSet<File>();
-			List<Callable<Set<File>>> tasks = new ArrayList<Callable<Set<File>>>();
+			BlockingQueue<File> queue = new LinkedBlockingQueue<File>();
+			
+			List<Callable<Object>> tasks = new ArrayList<Callable<Object>>();
 			for (File file : files) {
-				FileProducer producer = new FileProducer(file, filter);
+				FileProducer producer = new FileProducer(file, filter, queue);
 				tasks.add(producer);
 			}
 			ExecutorService producerPool = Executors.newFixedThreadPool(Runtime
 					.getRuntime().availableProcessors());
-			List<Future<Set<File>>> results = producerPool.invokeAll(tasks);
+			producerPool.invokeAll(tasks);
 			producerPool.shutdown();
-			while (!producerPool.awaitTermination(1, TimeUnit.HOURS))
-				;
-			for (Future<Set<File>> result : results) {
-				try {
-					fileSet.addAll(result.get());
-				} catch (ExecutionException e) {
-				}
-			}
 
-			List<Callable<Object>> consumerTasks = new ArrayList<Callable<Object>>();
-			for (File file : fileSet) {
-				FileConsumer consumer = new FileConsumer(file, index);
-				consumerTasks.add(consumer);
-			}
 			ExecutorService consumerPool = Executors.newFixedThreadPool(Runtime
 					.getRuntime().availableProcessors());
-			consumerPool.invokeAll(consumerTasks);
+			while(!producerPool.isShutdown() || !queue.isEmpty()) {
+				FileConsumer consumer = new FileConsumer(queue.take(), index);
+				consumerPool.execute(consumer);
+			}
 			consumerPool.shutdown();
+			
+			while (!producerPool.awaitTermination(1, TimeUnit.HOURS))
+				;
 			while (!consumerPool.awaitTermination(1, TimeUnit.HOURS))
 				;
 		}

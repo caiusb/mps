@@ -3,21 +3,14 @@ package indexer;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import util.StopWatch;
 
@@ -82,40 +75,73 @@ public class ProducerConsumer {
 				+ indexer.getIndex().get("the").size());
 	}
 
-	private static class FileProducer implements Callable<Object> {
+	private static class FileProducer {
 
-		private final File file;
+		private final File[] files;
 		private Set<File> filesToIndex;
 		private FileFilter filter;
 		private BlockingQueue<File> queue;
+		private ProducerThread[] threads;
 
-		public FileProducer(File file, FileFilter filter, BlockingQueue<File> queue) {
-			this.file = file;
+		public FileProducer(File[] files, FileFilter filter, BlockingQueue<File> queue) {
+			this.files = files;
 			this.filter = filter;
 			this.queue = queue;
 		}
+		
+		private static class ProducerThread extends Thread {
+			
+			private File file;
+			private BlockingQueue<File> queue;
+			private FileFilter filter;
 
-		@Override
-		public Object call() throws Exception {
-			filesToIndex = new HashSet<File>();
-			if (file.isDirectory())
-				crawl(file);
-			else
-				queue.add(file);
-
-			return null;
-		}
-
-		private void crawl(File root) throws InterruptedException {
-			if (!root.isDirectory())
-				return;
-
-			File[] entries = root.listFiles(filter);
-			for (File entry : entries)
-				if (entry.isDirectory())
-					crawl(entry);
+			public ProducerThread(File file, FileFilter filter, BlockingQueue<File> queue) {
+				this.file = file;
+				this.filter = filter;
+				this.queue = queue;
+			}
+			
+			@Override
+			public void run() {
+				if (file.isDirectory())
+					try {
+						crawl(file);
+					} catch (InterruptedException e) {
+					}
 				else
-					queue.add(entry);
+					queue.add(file);
+			}
+			
+			private void crawl(File root) throws InterruptedException {
+				if (!root.isDirectory())
+					return;
+
+				File[] entries = root.listFiles(filter);
+				for (File entry : entries)
+					if (entry.isDirectory())
+						crawl(entry);
+					else
+						queue.add(entry);
+			}
+		}
+		
+		public void produce() {
+			threads = new ProducerThread[files.length];
+			for (int i=0; i<files.length; i++) {
+				threads[i] = new ProducerThread(files[i], filter, queue);
+				threads[i].start();
+			}
+		}
+		
+		public void join() {
+			for (int i=0; i<files.length; i++) {
+				try {
+					threads[i].join();
+				} catch (InterruptedException e) {
+				}
+			}
+			
+			areProducersDone = true;
 		}
 	}
 
@@ -210,24 +236,13 @@ public class ProducerConsumer {
 		public void compute() throws InterruptedException {
 			BlockingQueue<File> queue = new LinkedBlockingQueue<File>();
 			
-			List<Callable<Object>> tasks = new ArrayList<Callable<Object>>();
-			for (File file : files) {
-				FileProducer producer = new FileProducer(file, filter, queue);
-				tasks.add(producer);
-			}
-			ExecutorService producerPool = Executors.newFixedThreadPool(Runtime
-					.getRuntime().availableProcessors());
-			producerPool.invokeAll(tasks);
-			producerPool.shutdown();
-			
+			FileProducer producer = new FileProducer(files, filter, queue);
 			FileConsumer consumer = new FileConsumer(index, queue, Runtime.getRuntime().availableProcessors());
+			
+			producer.produce();
 			consumer.consume();
 
-			while (!producerPool.awaitTermination(1, TimeUnit.HOURS))
-				;
-			
-			areProducersDone = true;
-			
+			producer.join();
 			consumer.join();
 		}
 	}

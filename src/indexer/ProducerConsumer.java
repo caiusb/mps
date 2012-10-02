@@ -63,7 +63,7 @@ import util.StopWatch;
 
 public class ProducerConsumer {
 	
-	private static boolean areProducersDone = false;
+	private static volatile boolean areProducersDone = false;
 
 	private static void startIndexing(File[] files) {
 		FileFilter filter = new FileFilter() {

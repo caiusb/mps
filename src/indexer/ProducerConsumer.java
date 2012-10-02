@@ -5,7 +5,6 @@ import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +16,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -142,8 +140,10 @@ public class ProducerConsumer {
 					String line = s.nextLine();
 					String[] split = line.split(" ");
 					for (String token : split) {
-						index.putIfAbsent(token, Collections
-									.newSetFromMap(new ConcurrentHashMap<File, Boolean>()));
+						index.putIfAbsent(
+								token,
+								Collections
+										.newSetFromMap(new ConcurrentHashMap<File, Boolean>()));
 						Set<File> set = index.get(token);
 						set.add(file);
 					}
@@ -177,11 +177,11 @@ public class ProducerConsumer {
 				FileProducer producer = new FileProducer(file, filter);
 				tasks.add(producer);
 			}
-			ExecutorService pool = Executors.newFixedThreadPool(Runtime
+			ExecutorService producerPool = Executors.newFixedThreadPool(Runtime
 					.getRuntime().availableProcessors());
-			List<Future<Set<File>>> results = pool.invokeAll(tasks);
-			pool.shutdown();
-			while (!pool.awaitTermination(1, TimeUnit.HOURS))
+			List<Future<Set<File>>> results = producerPool.invokeAll(tasks);
+			producerPool.shutdown();
+			while (!producerPool.awaitTermination(1, TimeUnit.HOURS))
 				;
 			for (Future<Set<File>> result : results) {
 				try {
@@ -189,7 +189,6 @@ public class ProducerConsumer {
 				} catch (ExecutionException e) {
 				}
 			}
-			
 
 			List<Callable<Object>> consumerTasks = new ArrayList<Callable<Object>>();
 			for (File file : fileSet) {

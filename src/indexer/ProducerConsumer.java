@@ -15,6 +15,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -115,7 +117,7 @@ public class ProducerConsumer {
 		}
 	}
 
-	private static class FileConsumer {
+	private static class FileConsumer implements Callable<Object> {
 
 		private ConcurrentMap<String, Set<File>> index;
 		private Set<File> files;
@@ -126,8 +128,10 @@ public class ProducerConsumer {
 			this.index = index;
 		}
 
-		public void consume() {
+		@Override
+		public Object call() {
 			indexFile(file);
+			return null;
 		}
 
 		public void indexFile(File file) {
@@ -138,7 +142,8 @@ public class ProducerConsumer {
 					String line = s.nextLine();
 					String[] split = line.split(" ");
 					for (String token : split) {
-						index.putIfAbsent(token, new HashSet<File>());
+						index.putIfAbsent(token, Collections
+									.newSetFromMap(new ConcurrentHashMap<File, Boolean>()));
 						Set<File> set = index.get(token);
 						set.add(file);
 					}
@@ -184,10 +189,18 @@ public class ProducerConsumer {
 				}
 			}
 			
+
+			List<Callable<Object>> consumerTasks = new ArrayList<Callable<Object>>();
 			for (File file : fileSet) {
 				FileConsumer consumer = new FileConsumer(file, index);
-				consumer.consume();
+				consumerTasks.add(consumer);
 			}
+			ExecutorService consumerPool = Executors.newFixedThreadPool(Runtime
+					.getRuntime().availableProcessors());
+			consumerPool.invokeAll(consumerTasks);
+			consumerPool.shutdown();
+			while (!consumerPool.awaitTermination(1, TimeUnit.HOURS))
+				;
 		}
 	}
 

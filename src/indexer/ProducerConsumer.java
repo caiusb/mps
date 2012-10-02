@@ -220,7 +220,7 @@ public class ProducerConsumer {
 			producerPool.invokeAll(tasks);
 			producerPool.shutdown();
 			
-			FileConsumer consumer = new FileConsumer(index, queue, 2);
+			FileConsumer consumer = new FileConsumer(index, queue, Runtime.getRuntime().availableProcessors());
 			consumer.consume();
 
 			while (!producerPool.awaitTermination(1, TimeUnit.HOURS))

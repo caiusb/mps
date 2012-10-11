@@ -1,6 +1,9 @@
 package bank;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /*
  * Fix the deadlock below by giving up lock acquisition if
@@ -11,9 +14,11 @@ public class BankTryLock {
 
 	public static class Account {
 		private long balance;
+		private Lock lock;
 
 		public Account(long balance) {
 			this.balance = balance;
+			lock = new ReentrantLock();
 		}
 
 		void withdraw(long amount) {
@@ -26,6 +31,10 @@ public class BankTryLock {
 
 		public long getBalance() {
 			return this.balance;
+		}
+
+		public Lock getLock() {
+			return lock;
 		}
 	}
 
@@ -45,14 +54,23 @@ public class BankTryLock {
 				try {
 					amount = nap();
 
-					synchronized (to) {
-						synchronized (from) {
-							from.withdraw(amount);
-							to.deposit(amount);
-						}
+					while (true) {
+						from.getLock().lock();
+						boolean locked = to.getLock().tryLock(10,
+								TimeUnit.MILLISECONDS);
+						if (locked)
+							break;
+
+						from.getLock().unlock();
 					}
+
+					from.withdraw(amount);
+					to.deposit(amount);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
+				} finally {
+					from.getLock().unlock();
+					to.getLock().unlock();
 				}
 			}
 		}

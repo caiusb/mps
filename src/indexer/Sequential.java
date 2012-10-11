@@ -77,8 +77,6 @@ public class Sequential {
 									.newSetFromMap(new HashMap<File, Boolean>());
 							index.put(token, set);
 						}
-						Set<File> set = index.get(token);
-						set.add(file);
 					}
 				}
 				s.close();

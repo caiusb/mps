@@ -17,7 +17,6 @@ public class ChatRoom {
 	public boolean joinRoom(String nickname, String userName, String password) {
 		UserProfile userProfile = new UserProfile(userName, password);
 		if (!occupants.containsKey(nickname)) {
-			// //.....
 			occupants.put(nickname, userProfile);
 			return true;
 		}

@@ -1,7 +1,7 @@
 package bank;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -13,10 +13,13 @@ public class BankOrdered {
 
 	public static class Account {
 		private long balance;
+		private static AtomicInteger lastId = new AtomicInteger(0);
+		public final int id;
 		private Lock lock;
 
 		public Account(long balance) {
 			this.balance = balance;
+			id = lastId.getAndIncrement();
 			lock = new ReentrantLock();
 		}
 
@@ -32,8 +35,12 @@ public class BankOrdered {
 			return this.balance;
 		}
 
-		public Lock getLock() {
-			return lock;
+		public void lock() {
+			lock.lock();
+		}
+
+		public void unlock() {
+			lock.unlock();
 		}
 	}
 
@@ -52,15 +59,13 @@ public class BankOrdered {
 				long amount;
 				try {
 					amount = nap();
-
-					while (true) {
-						from.getLock().lock();
-						boolean locked = to.getLock().tryLock(10,
-								TimeUnit.MILLISECONDS);
-						if (locked)
-							break;
-						
-						from.getLock().unlock();
+					
+					if (from.id > to.id) {
+						from.lock();
+						to.lock();
+					} else {
+						to.lock();
+						from.lock();
 					}
 
 					from.withdraw(amount);
@@ -68,8 +73,8 @@ public class BankOrdered {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				} finally {
-					from.getLock().unlock();
-					to.getLock().unlock();
+					from.unlock();
+					to.unlock();
 				}
 			}
 		}

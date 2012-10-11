@@ -78,7 +78,6 @@ public class ProducerConsumer {
 	private static class FileProducer {
 
 		private final File[] files;
-		private Set<File> filesToIndex;
 		private FileFilter filter;
 		private BlockingQueue<File> queue;
 		private ProducerThread[] threads;
